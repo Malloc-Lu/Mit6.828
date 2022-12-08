@@ -69,15 +69,6 @@ uint32_t* (ebpp[6]);
 // use the following strct to log the information of the eip directly
 struct Eipdebuginfo info;
 
-/*
-	info->eip_file = "<unknown>";
-	info->eip_line = 0;
-	info->eip_fn_name = "<unknown>";
-	info->eip_fn_namelen = 9;
-	info->eip_fn_addr = ebp;
-	info->eip_fn_narg = 0;
-*/
-
 	ebpp[0] = (uint32_t*) ebp;
 	for(int i = 1; i <= 5; ++i){
 		ebpp[i] = (uint32_t*) *ebpp[i-1];

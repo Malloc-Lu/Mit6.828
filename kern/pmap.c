@@ -263,7 +263,6 @@ page_init(void)
 	// Change the code to reflect this.
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
-	size_t i;
 	/*for (i = 0; i < npages; i++) {
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
@@ -272,35 +271,35 @@ page_init(void)
 	size_t i;
         // 1)
         i = 0;
-        page[i]->pp_ref = 1;
-        pages[i]->pp_link = NULL;
+        pages[i].pp_ref = 1;
+        pages[i].pp_link = NULL;
 
         // 2) [PGSIZE, npages_basemem * PGSIZE] is free
         i = PGNUM(PGSIZE);
-        for(; i < npage_basemem; ++i){
-                pages[i]->pp_ref = 0;
-                pages[i]->pp_link = page_free_list;
+        for(; i < npages_basemem; ++i){
+                pages[i].pp_ref = 0;
+                pages[i].pp_link = page_free_list;
                 page_free_list = &pages[i];
         }
 
         // 3) [IOPHYSMEM, EXTPHYSMEM] is allocated，so we set the pp_ref = 1, pp_link = NULL
         size_t extphysmem_page = PGNUM(EXTPHYSMEM);
         for(; i < extphysmem_page; ++i){
-                pages[i]->pp_ref = 1;
-                pages[i]->pp_link = page_free_list;
+                pages[i].pp_ref = 1;
+                pages[i].pp_link = page_free_list;
                 page_free_list = &pages[i];
         }
 
         // 4) [EXTPHYSMEM, ...]
         size_t already_in_use_page = PGNUM(PADDR(ROUNDUP(boot_alloc(0), PGSIZE)));
         for(; i < already_in_use_page; ++i){
-                pages[i]->pp_ref = 1;
-                pages[i]->pp_link = page_free_list;
+                pages[i].pp_ref = 1;
+                pages[i].pp_link = page_free_list;
                 page_free_list = &pages[i];
         }
         for(; i < npages; ++i){
-                pages[i]->pp_ref = 0;
-                pages[i]->pp_link = page_free_list;
+                pages[i].pp_ref = 0;
+                pages[i].pp_link = page_free_list;
                 page_free_list = &pages[i];
         }
 }
@@ -321,15 +320,15 @@ struct PageInfo *
 page_alloc(int alloc_flags)
 {
 	// Fill this function in
-        if(NULL == page_free_list[0]->pp_link){
+        if(NULL == page_free_list[0].pp_link){
                 return NULL;
         }
-struct PageInfo* alloc_page = (struct PageInfo*)page_free_list[0];
+struct PageInfo* alloc_page = page_free_list;
         if(alloc_flags & ALLOC_ZERO){
                 memset(page2kva(alloc_page), '\0', PGSIZE);
         }
-        page_free_list[0]->pp_link = page_free_list[0]->pp_link->pp_link;
-        page_free_list[0]->pp_link = NULL;
+        page_free_list[0].pp_link = page_free_list[0].pp_link->pp_link;
+        page_free_list[0].pp_link = NULL;
         return alloc_page;
 }
 
@@ -343,7 +342,7 @@ page_free(struct PageInfo *pp)
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
-	if( 0 != pp->pp_ref | NULL != pp->pp_link){
+	if( (0 != pp->pp_ref) | (NULL != pp->pp_link)){
                 panic("The page may not be free.");
         }
         pp->pp_link = page_free_list;

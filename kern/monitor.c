@@ -25,6 +25,7 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+	{ "backtrace", "Display the eip address and the debug infomation", mon_backtrace }
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -59,6 +60,67 @@ int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	// Your code here.
+	cprintf("Stack backtrace:\n");
+	
+	// get the current ebp
+uint32_t ebp;
+	asm volatile("movl %%ebp, %0" : "=r" (ebp));
+
+	// get all the six ebp(s) from the current ebp through the stack mechanism
+uint32_t* (ebpp[6]);
+// use the following strct to log the information of the eip directly
+struct Eipdebuginfo info;
+
+	ebpp[0] = (uint32_t*) ebp;
+	for(int i = 1; i <= 5; ++i){
+		ebpp[i] = (uint32_t*) *ebpp[i-1];
+	}
+
+	// print eip, args of the each ebp
+	for(int i = 0; i <= 5; ++i){
+		cprintf("  %d ebp %08x eip %08x args %08x %08x %08x %08x %08x\n",
+			   i, ebpp[i], *(ebpp[i] + 1), *(ebpp[i] + 2), *(ebpp[i] + 3), *(ebpp[i] + 4), *(ebpp[i] + 5),
+				*(ebpp[i] + 6));
+		if(0 == debuginfo_eip(*(ebpp[i] + 1), &info)){
+			cprintf("	%s:%d:%.*s+%d \n", info.eip_file, info.eip_line, 
+						info.eip_fn_namelen, info.eip_fn_name,
+						*(ebpp[i]+1) - info.eip_fn_addr);
+		}	
+	}
+
+/*	
+uint32_t eip;
+	eip = *(ebpp + 1);
+        cprintf(" eip %08x ", eip);
+*/
+	// useless code
+	/*
+	asm volatile("movl 4(%%ebp), %0" : "=r" (eip));
+	cprintf(" eip %08x ", eip);
+	*/
+
+/*
+uint32_t args[5];
+	cprintf(" args");
+	for(int i = 0; i < 5; ++i){
+		args[i] = *(ebpp + i + 2);	// for the first arg locates where 8 bytes above the ebp's position
+		cprintf(" %08x", args[i]);
+	}
+	cprintf("\n");
+*/
+
+	// useless code
+	/*
+	//asm volatile("leal (%%ebp, %0, 4), %1" : "=r" (args) : "r" (i));
+	//cprintf(" %08x", args);
+	asm volatile("leal (%%ebp, %0, 4), %1 \n\t"
+                                "movl (%1), %1 \n\t"
+                                : "=r" (args)
+                                : "r" (i)
+                            );
+	*/
+
+
 	return 0;
 }
 

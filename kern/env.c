@@ -116,6 +116,12 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
+struct Env* temp = env_free_list;               // temporarily store the last item of env_free_list
+    for(int i = 0; i < NENV; ++i){
+        envs[i].env_id = 0;
+        temp = &env[i];
+        temp = temp->env_link;
+    }
 
 	// Per-CPU part of the initialization
 	env_init_percpu();

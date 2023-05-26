@@ -185,6 +185,11 @@ env_setup_vm(struct Env *e)
 	//    - The functions in kern/pmap.h are handy.
 
 	// LAB 3: Your code here.
+    // convert the p into virtual address
+    e->env_pgdir = (pte*)page2kva(p);
+    p->pp_ref++;
+    memcpy(e->env_pgdir, kern_pgdir, PGSIZE);
+
 
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
@@ -272,7 +277,15 @@ region_alloc(struct Env *e, void *va, size_t len)
 	// Hint: It is easier to use region_alloc if the caller can pass
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
-	//   (Watch out for corner-cases!)
+	//   (Watch out for corner-cases!)i
+    va = ROUNDDOWN(va, PGSIZE);
+size_t size = ROUNDUP((va + len), PGSIZE) - va;
+void* env_space = boot_alloc(len);
+    if(NULL == env_space)
+    {
+        panic("boot_alloc failed.")
+    }
+    boot_map_region(e->env_pgdir, va, size, PADDR(env_space));
 }
 
 //
@@ -329,6 +342,17 @@ load_icode(struct Env *e, uint8_t *binary)
 	//  What?  (See env_run() and env_pop_tf() below.)
 
 	// LAB 3: Your code here.
+struct Proghdr* ph;
+struct Proghdr* eph;        // end of programe head
+struct Elf* elfhdr = (struct Elf*)binary;
+    if(ELF_MAGIC != elfhdr->e_magic){
+        panic("the elfhdr->e_magic != ELF_MAGIC");
+    }
+    ph = (struct Proghdr*) ((uint8_t*)elfhdr + elfhdr->e_phoff);
+    eph = ph + elfhdr->e_phnum;
+    for(; ph < eph; ++ph)
+    {
+        }
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
@@ -347,6 +371,11 @@ void
 env_create(uint8_t *binary, enum EnvType type)
 {
 	// LAB 3: Your code here.
+struct Env** env_store; 
+    env_alloc(env_store, curenv->envid);
+    load_icode(*env_store, binary);
+    *env_store->env_type = ENV_TYPE_USER;
+    *env_store->parent_id = 0;
 }
 
 //
@@ -463,7 +492,20 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
-
-	panic("env_run not yet implemented");
+    // 1.1
+    if(ENV_RUNNING == curenv->env_status){
+        curenv->env_status = ENV_RUNNABLE;
+    }
+    // 1.2
+    curenv = e;
+    // 1.3
+    curenv->env_status = ENV_RUNNING;
+    // 1.4
+    ++curenv->env_runs;
+    // 1.5
+    lcr3(PADDR(e->env_pgdir));
+    // 2
+    env_pop_tf(e->env_tf);
+	// panic("env_run not yet implemented");
 }
 

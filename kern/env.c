@@ -338,21 +338,33 @@ load_icode(struct Env *e, uint8_t *binary)
 	//  this function?
 	//
 	//  You must also do something with the program's entry point,
-	//  to make sure that the environment starts executing there.
-	//  What?  (See env_run() and env_pop_tf() below.)
+	//  to make sure that the environment starts e
+
 
 	// LAB 3: Your code here.
 struct Proghdr* ph;
 struct Proghdr* eph;        // end of programe head
-struct Elf* elfhdr = (struct Elf*)binary;
-    if(ELF_MAGIC != elfhdr->e_magic){
+struct Elf* ELFhdr = (struct Elf*)binary;
+    if(ELF_MAGIC != ELFhdr->e_magic){
         panic("the elfhdr->e_magic != ELF_MAGIC");
     }
-    ph = (struct Proghdr*) ((uint8_t*)elfhdr + elfhdr->e_phoff);
-    eph = ph + elfhdr->e_phnum;
+    ph = (struct Proghdr*) ((uint8_t*)ELFhdr + ELFhdr->e_phoff);
+    eph = ph + ELFhdr->e_phnum;
     for(; ph < eph; ++ph)
     {
+        if(ELF_PROG_LOAD == ph->p_type)
+        {
+            assert((void("ph->p_filesz <= ph->p_memsz"), ph->p_filesz <= ph->p_memsz));
+            // copy 'binary + ph->p_offset' to 'ph->p_va'
+            memcpy(ph->p_va, binary + ph->p_offset, ph->p_filesz);
+            memset(binary + ph->p_offset + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
+            // all page protection bits should be user read/write 
+            e->env_pgdir[PDX(ph->p_va)] = PTE_ADDR(e->env_pgdir[PDX(ph->p_va)]) | PTE_P | PTE_U | PTE_W;
+            // 
+
+
         }
+    }
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.

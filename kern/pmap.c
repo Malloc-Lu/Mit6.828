@@ -700,7 +700,10 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// beginning of the MMIO region.  Because this is static, its
 	// value will be preserved between calls to mmio_map_region
 	// (just like nextfree in boot_alloc).
-	static uintptr_t base = MMIOBASE;
+	static uintptr_t base;
+    if(!base){
+        base = MMIOBASE;
+    }
 
 	// Reserve size bytes of virtual memory starting at base and
 	// map physical pages [pa,pa+size) to virtual addresses
@@ -720,7 +723,24 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Hint: The staff solution uses boot_map_region.
 	//
 	// Your code here:
-	panic("mmio_map_region not implemented");
+uintptr_t result;
+    result = base;
+    if(0 == size){
+        cprintf("mmio_map_region size parameter is 0\n");
+        return (void*)result;
+    }
+    if(0 < size){
+        if((MMIOLIM - MMIOBASE) < size){
+            panic("mmio_map_region out of MMIOLIM\n");
+        }
+        base = ROUNDUP(base + size, PGSIZE);
+        cprintf("mmio_map_region alloc memory at %x, next base is %x\n", result, base);
+        boot_map_region(curenv->env_pgdir, base, size, pa, PTE_PCD | PTE_PWT);
+        return (void*)result;
+    }
+    panic("mmio_map_region's size < 0");
+    return NULL;
+	// panic("mmio_map_region not implemented");
 }
 
 static uintptr_t user_mem_check_addr;

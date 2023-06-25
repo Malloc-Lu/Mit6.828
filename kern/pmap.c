@@ -332,7 +332,7 @@ page_init(void)
 	// LAB 4:
 	// Change your code to mark the physical page at MPENTRY_PADDR
 	// as in use
-
+size_t pp_mpentry_paddr = PGNUM(MPENTRY_PADDR);
 	// The example code here marks all physical pages as free.
 	// However this is not truly the case.  What memory is free?
 	//  1) Mark physical page 0 as in use.
@@ -369,9 +369,15 @@ page_init(void)
         i = PGNUM(PGSIZE);
         // cprintf("PGNUM(PGSIZE) is %d\n",i);
         for(i = 1; i < npages_basemem; ++i){
-                pages[i].pp_ref = 0;
-                pages[i].pp_link = page_free_list;
-                page_free_list = &pages[i];
+            // mark the physical page at MPENTRY_PADDR as in use
+            if(pp_mpentry_paddr == i){
+                pages[i].pp_ref = 1;
+                pages[i].pp_link = NULL;
+                continue;
+            }
+            pages[i].pp_ref = 0;
+            pages[i].pp_link = page_free_list;
+            page_free_list = &pages[i];
         }
         // cprintf("i is %d and npages is %d\n",i,npages);
         // cprintf("npages_basemem is %d\n", npages_basemem);
@@ -701,6 +707,7 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// value will be preserved between calls to mmio_map_region
 	// (just like nextfree in boot_alloc).
 	static uintptr_t base;
+    // WARNING: maybe here is wrong
     if(!base){
         base = MMIOBASE;
     }
@@ -729,13 +736,14 @@ uintptr_t result;
         cprintf("mmio_map_region size parameter is 0\n");
         return (void*)result;
     }
+    size = ROUNDUP(size, PGSIZE);
     if(0 < size){
-        if((MMIOLIM - MMIOBASE) < size){
+        if((base + size) >= MMIOLIM){
             panic("mmio_map_region out of MMIOLIM\n");
         }
-        base = ROUNDUP(base + size, PGSIZE);
+        boot_map_region(kern_pgdir, base, size, pa, PTE_PCD | PTE_PWT);
+        base += size;
         cprintf("mmio_map_region alloc memory at %x, next base is %x\n", result, base);
-        boot_map_region(curenv->env_pgdir, base, size, pa, PTE_PCD | PTE_PWT);
         return (void*)result;
     }
     panic("mmio_map_region's size < 0");

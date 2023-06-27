@@ -311,7 +311,11 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
-
+	for(uint8_t i = 0; i < NCPU; ++i){
+uintptr_t va = KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKSIZE;
+size_t size = KSTKSIZE;
+		boot_map_region(kern_pgdir, va, size, PADDR(percpu_kstacks[i]), PTE_P | PTE_W);
+	}
 }
 
 // --------------------------------------------------------------
@@ -741,7 +745,7 @@ uintptr_t result;
         if((base + size) >= MMIOLIM){
             panic("mmio_map_region out of MMIOLIM\n");
         }
-        boot_map_region(kern_pgdir, base, size, pa, PTE_PCD | PTE_PWT);
+        boot_map_region(kern_pgdir, base, size, pa, PTE_PCD | PTE_PWT | PTE_W);
         base += size;
         cprintf("mmio_map_region alloc memory at %x, next base is %x\n", result, base);
         return (void*)result;
@@ -1017,19 +1021,23 @@ check_kern_pgdir(void)
 	// (updated in lab 4 to check per-CPU kernel stacks)
 	for (n = 0; n < NCPU; n++) {
 		uint32_t base = KSTACKTOP - (KSTKSIZE + KSTKGAP) * (n + 1);
-		for (i = 0; i < KSTKSIZE; i += PGSIZE)
+		// cprintf("n is: %d\n", n);
+		for (i = 0; i < KSTKSIZE; i += PGSIZE){
+		//	cprintf("check_va2pa(pgdir,base + kstkgap) is: %x\n", check_va2pa(pgdir, base + KSTKGAP + i));
+		//	cprintf("PADDR(percpu_kstacks[n] + i) is: %x\n", PADDR(percpu_kstacks[n]) + i);
 			assert(check_va2pa(pgdir, base + KSTKGAP + i)
 				== PADDR(percpu_kstacks[n]) + i);
+		}
 		for (i = 0; i < KSTKGAP; i += PGSIZE)
 			assert(check_va2pa(pgdir, base + i) == ~0);
 	}
-	for (i = 0; i < KSTKSIZE; i += PGSIZE){
-       //  cprintf("i is: %d\n", i);
-       //  cprintf("here\n");
-       //  cprintf("check_va2pa(pgdir, KSTACKTOP - KSTKSIZE + i) is: %x\n", check_va2pa(pgdir, KSTACKTOP - KSTKSIZE + i));
-       //  cprintf("PADDR(bootstack) + i is: %x\n", PADDR(bootstack) + i);
-		assert(check_va2pa(pgdir, KSTACKTOP - KSTKSIZE + i) == PADDR(bootstack) + i);
-    }
+	// for (i = 0; i < KSTKSIZE; i += PGSIZE){
+    //    //  cprintf("i is: %d\n", i);
+    //    //  cprintf("here\n");
+    //    //  cprintf("check_va2pa(pgdir, KSTACKTOP - KSTKSIZE + i) is: %x\n", check_va2pa(pgdir, KSTACKTOP - KSTKSIZE + i));
+    //    //  cprintf("PADDR(bootstack) + i is: %x\n", PADDR(bootstack) + i);
+	// 	assert(check_va2pa(pgdir, KSTACKTOP - KSTKSIZE + i) == PADDR(bootstack) + i);
+    // }
 	assert(check_va2pa(pgdir, KSTACKTOP - PTSIZE) == ~0);
 
 	// check PDE permissions

@@ -1,6 +1,7 @@
 #include <inc/mmu.h>
 #include <inc/x86.h>
 #include <inc/assert.h>
+// #include <inc/lib.h>
 
 #include <kern/pmap.h>
 #include <kern/trap.h>
@@ -253,6 +254,9 @@ trap_dispatch(struct Trapframe *tf)
                                 tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, 
                                 tf->tf_regs.reg_esi);
             return;
+		// case SYS_yield:
+		// 	sys_yield();
+		// 	return;
         default:
 	// Unexpected trap: The user process or the kernel has a bug.
 	        print_trapframe(tf);

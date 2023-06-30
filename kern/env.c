@@ -323,7 +323,7 @@ int result = page_insert(e->env_pgdir, p, start, PTE_P | PTE_W | PTE_U);
         // boot_map_region(e->env_pgdir, va, PGSIZE, PADDR(page2kva(p)));
         start += PGSIZE;
     }
-    cprintf("region_alloc succeed\n");
+    // cprintf("region_alloc succeed\n");
 //size_t size = ROUNDUP((va + len), PGSIZE) - va;
 //void* env_space = boot_alloc(len);
 //    if(NULL == env_space)

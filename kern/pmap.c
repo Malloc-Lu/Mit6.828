@@ -785,7 +785,7 @@ uint32_t end = (uint32_t)ROUNDUP((va + len), PGSIZE);
 pte_t* addr;
     while(start < end){
         addr = pgdir_walk(env->env_pgdir, (void*)start, 0);
-        if(ULIM <= start || !(*addr & PTE_U) || (*addr & perm) != perm){
+        if(ULIM <= start || !(*addr & PTE_U) || (*addr & perm) != perm || (NULL == addr)){
             user_mem_check_addr = (start < va_uint) ? va_uint : start;
             return -E_FAULT;
         }

@@ -148,7 +148,8 @@ trap_init_percpu(void)
 	// user space on that CPU.
 	//
 	// LAB 4: Your code here:
-	thiscpu->cpu_ts.ts_esp0 = (uintptr_t)percpu_kstacks[thiscpu->cpu_id] + KSTKSIZE;
+uint32_t cpu_id = cpunum();
+	thiscpu->cpu_ts.ts_esp0 = (uintptr_t)percpu_kstacks[cpu_id] + KSTKSIZE;
 	thiscpu->cpu_ts.ts_ss0 = GD_KD;
 	thiscpu->cpu_ts.ts_iomb = sizeof(struct Taskstate);
 

@@ -99,6 +99,7 @@ envid2env(envid_t envid, struct Env **env_store, bool checkperm)
 	// If checkperm is set, the specified environment
 	// must be either the current environment
 	// or an immediate child of the current environment.
+
 	if (checkperm && e != curenv && e->env_parent_id != curenv->env_id) {
 		*env_store = 0;
 		return -E_BAD_ENV;
@@ -119,16 +120,16 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
-    envs[0].env_id = 0;
-    env_free_list = &envs[0];
-    envs[0].env_status = ENV_FREE;
-struct Env* temp = env_free_list;
-    for(int i = 1; i < NENV; ++i){
+//     envs[0].env_id = 0;
+//     env_free_list = &envs[0];
+//     envs[0].env_status = ENV_FREE;
+// struct Env* temp = env_free_list;
+    for(int i = NENV - 1; i >= 0; --i){
         envs[i].env_id = 0;
         envs[i].env_status = ENV_FREE;
-        temp->env_link = &envs[i];
+        envs[i].env_link = env_free_list;
+		env_free_list = &envs[i];
         // cprintf("temp is: %x\n", temp);
-        temp = temp->env_link;
     }
     envs[NENV - 1].env_link = NULL;
     cprintf("env_free_list is: %x\n", env_free_list);
@@ -416,7 +417,7 @@ struct PageInfo* p = NULL;
             // cprintf("binary + ph->p_offset + ph->p_filesz is: %x\n", binary + ph->p_offset + ph->p_filesz);
             // memset(binary + ph->p_offset + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
             // all page protection bits should be user read/write 
-            e->env_pgdir[PDX(ph->p_va)] = PTE_ADDR(e->env_pgdir[PDX(ph->p_va)]) | PTE_P | PTE_U | PTE_W;
+            // e->env_pgdir[PDX(ph->p_va)] = PTE_ADDR(e->env_pgdir[PDX(ph->p_va)]) | PTE_P | PTE_U | PTE_W;
             
         }
     }
@@ -426,11 +427,12 @@ struct PageInfo* p = NULL;
 
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
-    if(!(p = page_alloc(ALLOC_ZERO)))
-    {
-        panic("page_alloc in load_icode failed.");
-    }
-    page_insert(e->env_pgdir, p, (void*)(USTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W);
+	region_alloc(e, (void*)(USTACKTOP - PGSIZE), PGSIZE);
+    // if(!(p = page_alloc(ALLOC_ZERO)))
+    // {
+    //     panic("page_alloc in load_icode failed.");
+    // }
+    // page_insert(e->env_pgdir, p, (void*)(USTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W);
     
     // switch back to the kernel address space
     lcr3(PADDR(kern_pgdir));
@@ -548,6 +550,7 @@ env_pop_tf(struct Trapframe *tf)
 {
 	// Record the CPU we are running on for user-space debugging
 	curenv->env_cpunum = cpunum();
+	// cprintf("tf frame is: %x, tf->tfno is: %x\n", tf, tf->tf_trapno);
 
 	asm volatile(
 		"\tmovl %0,%%esp\n"
@@ -598,9 +601,11 @@ env_run(struct Env *e)
     // 1.4
     ++curenv->env_runs;
     // 1.5
-	unlock_kernel();
     lcr3(PADDR(e->env_pgdir));
+	unlock_kernel();
     // 2
+	// cprintf("before env_pop_tf e->env_id: %x, e->env_num: %x\n", e->env_id, ENVX(e->env_id));
+	// cprintf("trap frame is: %x, e->trap is: %x\n", &e->env_tf, e->env_tf.tf_trapno);
     env_pop_tf(&(e->env_tf));
 	// panic("env_run not yet implemented");
 }

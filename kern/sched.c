@@ -30,9 +30,9 @@ sched_yield(void)
 
 	// LAB 4: Your code here.
 	idle = thiscpu->cpu_env;
-int cur_env_id = NULL == idle ? -1 : ENVX(idle->env_id);
+int cur_env_id = (NULL == idle) ? -1 : ENVX(idle->env_id);
 int i;
-	for(i = cur_env_id; i < NENV; ++i){
+	for(i = cur_env_id + 1; i < NENV; ++i){
 		if(ENV_RUNNABLE == envs[i].env_status){
 			env_run(&envs[i]);
 		}

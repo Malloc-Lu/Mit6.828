@@ -551,7 +551,6 @@ env_pop_tf(struct Trapframe *tf)
 	// Record the CPU we are running on for user-space debugging
 	curenv->env_cpunum = cpunum();
 	// cprintf("tf frame is: %x, tf->tfno is: %x\n", tf, tf->tf_trapno);
-
 	asm volatile(
 		"\tmovl %0,%%esp\n"
 		"\tpopal\n"

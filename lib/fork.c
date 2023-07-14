@@ -25,6 +25,11 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 4: Your code here.
+pte_t pte = uvpt[PGNUM(addr)];
+// uint32_t page_entry = thisenv->env_pgdir[PDX(addr)][PTX(addr)];
+	if(!((err & FEC_WR) == FEC_WR) || !((pte & PTE_COW) == PTE_COW)){
+		panic("faulting access is not a write or a copy-on-write page.");
+	}
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
@@ -33,8 +38,19 @@ pgfault(struct UTrapframe *utf)
 	//   You should make three system calls.
 
 	// LAB 4: Your code here.
+envid_t envid = sys_getenvid();
+	if((r = sys_page_alloc(envid, (void*)PFTEMP, PTE_P | PTE_W | PTE_U)) != 0){
+		panic("pgfault: %e", r);
+	}
+	memcpy((void*)PFTEMP, ROUNDDOWN(addr, PGSIZE), PGSIZE);
+	if((r = sys_page_map(envid, PFTEMP, envid, ROUNDDOWN(addr, PGSIZE), PTE_P | PTE_U | PTE_W)) != 0){
+		panic("pgfault: %e", r);
+	}
+	if((r = sys_page_unmap(envid, PFTEMP)) != 0){
+		panic("pgfault: %e", r);
+	}
 
-	panic("pgfault not implemented");
+	// panic("pgfault not implemented");
 }
 
 //
@@ -54,7 +70,21 @@ duppage(envid_t envid, unsigned pn)
 	int r;
 
 	// LAB 4: Your code here.
-	panic("duppage not implemented");
+void* addr = (void*)(pn * PGSIZE);
+pte_t pte = uvpt[pn];
+	if((pte & PTE_W) == PTE_W || (pte & PTE_COW) == PTE_COW){
+		if((r = sys_page_map(0, addr, envid, addr, PTE_COW | PTE_P | PTE_U)) != 0){
+			panic("duppage: %e", r);
+		}
+		if((r = sys_page_map(0, addr, 0, addr, PTE_COW | PTE_P | PTE_U))){
+			panic("duppage: %e", r);
+		}
+	}else{
+		if((r = sys_page_map(0, addr, envid, addr, PTE_P | PTE_W | PTE_U)) != 0){
+			panic("duppage: %e", r);
+		}
+	}
+	// panic("duppage not implemented");
 	return 0;
 }
 
@@ -78,6 +108,19 @@ envid_t
 fork(void)
 {
 	// LAB 4: Your code here.
+int r;
+	if((r = sys_env_set_pgfault_upcall(0, pgfault)) != 0){
+		panic("fork: %e", r);
+	}
+envid_t child_envid;
+	if((child_envid = sys_exofork()) != 0){
+		panic("fork: %e", child_envid);
+	}
+	if(child_envid == 0){
+		// we are child
+		thisenv = &envs[ENVX(sys_getenvid())];
+		return 0;
+	}
 	panic("fork not implemented");
 }
 

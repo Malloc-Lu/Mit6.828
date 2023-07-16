@@ -26,8 +26,14 @@ pgfault(struct UTrapframe *utf)
 
 	// LAB 4: Your code here.
 pte_t pte = uvpt[PGNUM(addr)];
+// cprintf("pte is: %x\n", pte);
+// cprintf("addr is: %x\n", addr);
+// cprintf("PGNUM(addr) is: %x\n", PGNUM(addr));
+// cprintf("uvpt is: %x\n", uvpt);
+// cprintf("uvpt[PGNUM(addr)] is: %x\n", uvpt[PGNUM(addr)]);
+// cprintf("err is: %x\n", err);
 // uint32_t page_entry = thisenv->env_pgdir[PDX(addr)][PTX(addr)];
-	if(!((err & FEC_WR) == FEC_WR) || !((pte & PTE_COW) == PTE_COW)){
+	if(((err & FEC_WR) == 0) || ((pte & PTE_COW) == 0)){
 		panic("faulting access is not a write or a copy-on-write page.");
 	}
 
@@ -109,19 +115,36 @@ fork(void)
 {
 	// LAB 4: Your code here.
 int r;
-	if((r = sys_env_set_pgfault_upcall(0, pgfault)) != 0){
-		panic("fork: %e", r);
-	}
 envid_t child_envid;
-	if((child_envid = sys_exofork()) != 0){
-		panic("fork: %e", child_envid);
-	}
+	set_pgfault_handler(pgfault);
+
+	child_envid = sys_exofork();
 	if(child_envid == 0){
 		// we are child
 		thisenv = &envs[ENVX(sys_getenvid())];
 		return 0;
 	}
-	panic("fork not implemented");
+uint32_t start = PGNUM(UTEXT);
+uint32_t end = PGNUM(USTACKTOP);
+	for(uint32_t i = start; i < end; ++i){
+		if((uvpd[i >> 10] & PTE_P) && (uvpt[i] & PTE_P)){
+			if((r = duppage(child_envid, i)) != 0){
+				return r;
+			}
+		}
+	}
+	if((r = sys_page_alloc(child_envid, (void*)(UXSTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W)) != 0){
+		panic("fork: %e", r);
+	}
+extern void _pgfault_upcall(void);
+	if((r = sys_env_set_pgfault_upcall(child_envid, _pgfault_upcall)) != 0){
+		panic("fork, sys_env_set_pgfault_upcall: %e", r);
+	}
+	if((r = sys_env_set_status(child_envid, ENV_RUNNABLE)) != 0){
+		return r;
+	}
+	return child_envid;
+	// panic("fork not implemented");
 }
 
 // Challenge!

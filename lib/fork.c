@@ -26,13 +26,6 @@ pgfault(struct UTrapframe *utf)
 
 	// LAB 4: Your code here.
 pte_t pte = uvpt[PGNUM(addr)];
-// cprintf("pte is: %x\n", pte);
-// cprintf("addr is: %x\n", addr);
-// cprintf("PGNUM(addr) is: %x\n", PGNUM(addr));
-// cprintf("uvpt is: %x\n", uvpt);
-// cprintf("uvpt[PGNUM(addr)] is: %x\n", uvpt[PGNUM(addr)]);
-// cprintf("err is: %x\n", err);
-// uint32_t page_entry = thisenv->env_pgdir[PDX(addr)][PTX(addr)];
 	if(((err & FEC_WR) == 0) || ((pte & PTE_COW) == 0)){
 		panic("faulting access is not a write or a copy-on-write page.");
 	}

@@ -94,6 +94,13 @@ trap_init(void)
     void t_syscall();
     void t_default();
 
+	void irq_timer();
+	void irq_kbd();
+	void irq_serial();
+	void irq_spurious();
+	void irq_ide();
+	void irq_error();
+
     SETGATE(idt[T_DIVIDE], 0, GD_KT, &t_divide, 0);
     SETGATE(idt[T_DEBUG], 0, GD_KT, &t_debug, 0);
     SETGATE(idt[T_NMI], 0, GD_KT, &t_nmi, 0);
@@ -114,6 +121,13 @@ trap_init(void)
     SETGATE(idt[T_SIMDERR], 0, GD_KT, &t_simderr, 0);
     SETGATE(idt[T_SYSCALL], 0, GD_KT, &t_syscall, 3);
     SETGATE(idt[T_DEFAULT], 0, GD_KT, &t_default, 0);
+
+	SETGATE(idt[IRQ_OFFSET + IRQ_TIMER], 0, GD_KT, &irq_timer, 0);
+	SETGATE(idt[IRQ_OFFSET + IRQ_KBD], 0, GD_KT, &irq_kbd, 0);
+	SETGATE(idt[IRQ_OFFSET + IRQ_SERIAL], 0, GD_KT, &irq_serial, 0);
+	SETGATE(idt[IRQ_OFFSET + IRQ_SPURIOUS], 0, GD_KT, &irq_spurious, 0);
+	SETGATE(idt[IRQ_OFFSET + IRQ_IDE], 0, GD_KT, &irq_ide, 0);
+	SETGATE(idt[IRQ_OFFSET + IRQ_ERROR], 0, GD_KT, &irq_error, 0);
 
 
 	// Per-CPU setup 
@@ -240,7 +254,6 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle clock interrupts. Don't forget to acknowledge the
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 4: Your code here.
-
     switch(tf->tf_trapno)
     {
         case T_PGFLT:
@@ -255,6 +268,10 @@ trap_dispatch(struct Trapframe *tf)
                                 tf->tf_regs.reg_ebx, tf->tf_regs.reg_edi, 
                                 tf->tf_regs.reg_esi);
             return;
+		case IRQ_OFFSET + IRQ_TIMER:
+			lapic_eoi();
+			sched_yield();
+			return;
 		// case SYS_yield:
 		// 	sys_yield();
 		// 	return;

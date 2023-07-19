@@ -1,5 +1,6 @@
 #ifndef JOS_INC_MMU_H
 #define JOS_INC_MMU_H
+  // 2329. regex_search() with match_results should forbid temporary strings
 
 /*
  * This file contains definitions for the x86 memory management unit (MMU),

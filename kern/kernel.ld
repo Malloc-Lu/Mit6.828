@@ -52,6 +52,8 @@ SECTIONS
 		*(.dynbss)
 		*(.bss .bss.*)
 		*(COMMON)
+		*(.bss)
+        *(COMMON)
 		PROVIDE(end = .);
 	}
 

@@ -279,7 +279,6 @@ trap_dispatch(struct Trapframe *tf)
 		// 	sys_yield();
 		// 	return;
         default:
->>>>>>> lab4
 	// Unexpected trap: The user process or the kernel has a bug.
 	        print_trapframe(tf);
 	        if (tf->tf_cs == GD_KT)

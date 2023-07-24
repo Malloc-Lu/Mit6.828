@@ -10,5 +10,6 @@ pageref(void *v)
 	pte = uvpt[PGNUM(v)];
 	if (!(pte & PTE_P))
 		return 0;
+
 	return pages[PGNUM(pte)].pp_ref;
 }

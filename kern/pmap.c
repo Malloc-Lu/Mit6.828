@@ -204,7 +204,7 @@ mem_init(void)
     // change the permission of the new image at UPAGES
     // REMIND: pages is also VIRTUAL ADDRESS, need to use 'PADDR()'
     // WARNING: the permission here may be wrong
-    boot_map_region(kern_pgdir, UPAGES, ROUNDUP(npages * sizeof(struct PageInfo), PGSIZE), PADDR(pages), PTE_P | PTE_W);
+    boot_map_region(kern_pgdir, UPAGES, ROUNDUP(npages * sizeof(struct PageInfo), PGSIZE), PADDR(pages), PTE_P | PTE_U);
     // WARNING: the permission here may be wrong
     kern_pgdir[PDX(UPAGES)] = PTE_ADDR(kern_pgdir[PDX(UPAGES)]) | PTE_P | PTE_U;
 

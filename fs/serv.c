@@ -89,6 +89,7 @@ openfile_lookup(envid_t envid, uint32_t fileid, struct OpenFile **po)
 {
 	struct OpenFile *o;
 
+struct PageInfo* mmpages = (struct PageInfo*)(0xf025a000);
 	o = &opentab[fileid % MAXOPEN];
 	if (pageref(o->o_fd) <= 1 || o->o_fileid != fileid)
 		return -E_INVAL;
@@ -214,7 +215,16 @@ serve_read(envid_t envid, union Fsipc *ipc)
 		cprintf("serve_read %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// Lab 5: Your code here:
-	return 0;
+int r;
+struct OpenFile *of;
+	if((r = openfile_lookup(envid, req->req_fileid, &of)) != 0){
+		return r;
+	}
+	if((r = file_read(of->o_file, ret->ret_buf, req->req_n, of->o_fd->fd_offset)) > 0){
+		of->o_fd->fd_offset += r;
+	}
+
+	return r;
 }
 
 

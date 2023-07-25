@@ -89,7 +89,6 @@ openfile_lookup(envid_t envid, uint32_t fileid, struct OpenFile **po)
 {
 	struct OpenFile *o;
 
-struct PageInfo* mmpages = (struct PageInfo*)(0xf025a000);
 	o = &opentab[fileid % MAXOPEN];
 	if (pageref(o->o_fd) <= 1 || o->o_fileid != fileid)
 		return -E_INVAL;
@@ -239,7 +238,16 @@ serve_write(envid_t envid, struct Fsreq_write *req)
 		cprintf("serve_write %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// LAB 5: Your code here.
-	panic("serve_write not implemented");
+	// panic("serve_write not implemented");
+int r;
+struct OpenFile *of;
+	if((r = openfile_lookup(envid, req->req_fileid, &of)) != 0){
+		return r;
+	}
+	if((r = file_write(of->o_file, req->req_buf, req->req_n, of->o_fd->fd_offset)) > 0){
+		of->o_fd->fd_offset += r;
+	}
+	return r;
 }
 
 // Stat ipc->stat.req_fileid.  Return the file's struct Stat to the

@@ -83,7 +83,7 @@ pte_t pte = uvpt[pn];
 			panic("duppage: %e", r);
 		}	
 	}else{
-		if((r = sys_page_map(0, addr, envid, addr, PTE_P | PTE_W | PTE_U)) != 0){
+		if((r = sys_page_map(0, addr, envid, addr, PTE_P | PTE_U)) != 0){
 			panic("duppage: %e", r);
 		}	
 	}

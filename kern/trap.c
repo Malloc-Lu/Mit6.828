@@ -280,6 +280,9 @@ trap_dispatch(struct Trapframe *tf)
             return;
 		case IRQ_OFFSET + IRQ_TIMER:
 			lapic_eoi();
+			if(thiscpu->cpu_id == 0){
+				time_tick();
+			}
 			sched_yield();
 			return;
 		// case SYS_yield:

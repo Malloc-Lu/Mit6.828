@@ -15,6 +15,15 @@ volatile void* e1000;
 static struct e1000_tx_desc e1000_tx_queue[NTXDESC] __attribute__((aligned(16)));
 static uint8_t e1000_tx_buf[NTXDESC][TX_BUF_SIZE];
 
+#define RE_BUF_SIZE 1518        // 后面可能需要更改这里的大小
+#define NREDESC 128
+
+static struct e1000_re_desc e1000_re_queue[NREDESC] __attribute__((aligned(16)));
+static uint8_t e1000_re_buf[NREDESC][RE_BUF_SIZE];
+
+#define JOS_DEFAULT_MAC_LOW     0x12005452
+#define JOS_DEFAULT_MAC_HIGH    0x00005634
+
 static void
 e1000_tx_init()
 {
@@ -45,6 +54,34 @@ e1000_tx_init()
                             (E1000_DEFAULT_TIPG_IPGR2 << E1000_TIPG_IPGR2_SHIFT);
 }
 
+static void
+e1000_re_init()
+{
+    // initialize re queue
+    int i;
+    memset(e1000_re_queue, 0, sizeof(e1000_re_queue));
+    for(i = 0;i < NREDESC; ++i){
+        e1000_re_queue[i].addr = PADDR(e1000_re_buf[i]);
+    }
+
+    // initialize receive address registers
+    // by default, it comes from EEPROM
+    E1000_REG(E1000_RAL) = JOS_DEFAULT_MAC_LOW;
+    E1000_REG(E1000_RAH) = JOS_DEFAULT_MAC_HIGH;
+    E1000_REG(E1000_RAH) |= E1000_RAH_AV;
+
+    // initialize receive descriptor registers
+    E1000_REG(E1000_RDBAL) = PADDR(e1000_re_queue);
+    E1000_REG(E1000_RDBAH) = 0;
+    E1000_REG(E1000_RDLEN) = sizeof(e1000_re_queue);
+    E1000_REG(E1000_RDH) = 0;
+    E1000_REG(E1000_RDT) = NREDESC - 1;
+
+    // initialize transmit control registers
+    E1000_REG(E1000_RCTL) &= ~(E1000_RCTL_LBM | E1000_RCTL_RDMTS | E1000_RCTL_SZ | E1000_RCTL_BSEX);
+    E1000_REG(E1000_RCTL) |= E1000_RCTL_EN | E1000_RCTL_SECRC;
+}
+
 
 int e1000_transmit(const void* buf, size_t size){
 int tail = E1000_REG(E1000_TDT);
@@ -64,7 +101,6 @@ struct e1000_tx_desc* tail_desc = &(e1000_tx_queue[tail]);
     // tail_desc->cmd |= E1000_TXD_CMD_RS | E1000_TXD_CMD_EOP;
     E1000_REG(E1000_TDT) = (tail + 1) % NTXDESC;
     return 0;
-    
 }
 
 // LAB 6: Your driver code here
@@ -76,5 +112,6 @@ int e1000_attach(struct pci_func* pcif){
     e1000_tx_init();
     // char *str = "hello";
     // int r = e1000_transmit(str, 6);
+    e1000_re_init();
     return 0;
 }

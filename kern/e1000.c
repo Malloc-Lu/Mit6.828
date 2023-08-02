@@ -74,7 +74,7 @@ int e1000_attach(struct pci_func* pcif){
     cprintf("e1000: status 0x%08x\n", E1000_REG(E1000_STATUS));
     // cprintf("device status:[%08x]\n", *(uint32_t *)((uint8_t *)e1000 + E1000_STATUS));
     e1000_tx_init();
-    char *str = "hello";
-    int r = e1000_transmit(str, 6);
+    // char *str = "hello";
+    // int r = e1000_transmit(str, 6);
     return 0;
 }

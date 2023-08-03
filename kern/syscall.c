@@ -472,6 +472,16 @@ sys_net_transmit(const void* buf, size_t size){
 	user_mem_assert(curenv, buf, size, PTE_U);
 	return e1000_transmit(buf, size);
 }
+
+// Receive a packet from network in user space
+//
+// Return 0 on success, < 0 on error.
+static int
+sys_net_recv(void* buf, size_t size){
+	user_mem_assert(curenv, buf, size, PTE_U);
+	return e1000_receive(buf, size);
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -518,6 +528,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return sys_time_msec();
 	case SYS_net_transmit:
 		return sys_net_transmit((const void*)a1, (size_t)a2);
+	case SYS_net_recv:
+		return sys_net_recv((void*)a1, (size_t)a2);
 	default:
 		return -E_INVAL;
 	}

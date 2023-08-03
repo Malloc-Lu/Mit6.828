@@ -54,6 +54,7 @@
 #define E1000_RAL       0x05400  /* Receive Address - RW Array */
 #define E1000_RAH       0x05404
 #define E1000_RAH_AV  0x80000000        /* Receive descriptor valid */
+#define E1000_RXD_STAT_DD       0x01    /* Descriptor Done */
 
 /* Receive Control */
 #define E1000_RCTL     0x00100  /* RX Control - RW */
@@ -94,4 +95,5 @@ struct e1000_re_desc{
 
 int e1000_attach(struct pci_func* pcif);
 int e1000_transmit(const void* buf, size_t size);
+int e1000_receive(void* buf, size_t size);
 #endif  // SOL >= 6

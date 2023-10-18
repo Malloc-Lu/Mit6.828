@@ -172,14 +172,17 @@ mp_init(void)
 	unsigned int i;
 
 	bootcpu = &cpus[0];
+	// search for an MP configure table 
 	if ((conf = mpconfig(&mp)) == 0)
 		return;
 	ismp = 1;
 	lapicaddr = conf->lapicaddr;
 
 	for (p = conf->entries, i = 0; i < conf->entry; i++) {
+		// * 判断是哪种类型的 mpconf
 		switch (*p) {
 		case MPPROC:
+			// * 将p转为 struct mpproc
 			proc = (struct mpproc *)p;
 			if (proc->flags & MPPROC_BOOT)
 				bootcpu = &cpus[ncpu];

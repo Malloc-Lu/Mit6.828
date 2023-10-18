@@ -51,11 +51,11 @@ i386_init(void)
 	trap_init();
 
 	// Lab 4 multiprocessor initialization functions
-	mp_init();
-	lapic_init();
+	mp_init();		// * search MP configure table in BIOS region
+	lapic_init();	// * initiate the Local APIC unit
 
 	// Lab 4 multitasking initialization functions
-	pic_init();
+	pic_init(); 	// * initiate the hardware using command `in` / `out`
 
 	// Lab 6 hardware initialization functions
 	time_init();
@@ -65,7 +65,7 @@ i386_init(void)
 	// Your code here:
 	lock_kernel();
 	// Starting non-boot CPUs
-	boot_aps();
+	boot_aps();		// * execute code in mpentry.S which calls mp_main() 
 
 	// Start fs.
 	ENV_CREATE(fs_fs, ENV_TYPE_FS);
